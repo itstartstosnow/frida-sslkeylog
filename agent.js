@@ -79,8 +79,11 @@ resolver.enumerateMatches("exports:*!SSL_connect", {
             // attach interceptors to the SSLread and SSLwrite functions
             Interceptor.attach(resolveExport(name), {
                 onEnter: function (args) {
-                    const ssl = args[0];
-                    handleSSL(ssl);
+                    this.ssl = args[0];
+                }, 
+
+                onLeave: function(retvalue) {
+                    handleSSL(this.ssl);
                 }
             });
         }
