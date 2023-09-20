@@ -40,10 +40,12 @@ resolver.enumerateMatches("exports:*!SSL_connect", {
         }
 
         const SSL_get_session = resolveFunction(
+            // SSL_get_session() returns a pointer to the SSL_SESSION actually used in ssl
             "SSL_get_session", "pointer", ["pointer"]
         );
 
         const i2d_SSL_SESSION = resolveFunction(
+            // i2d_SSL_SESSION() transforms the SSL_SESSION object in into the ASN1 representation and stores it into the memory location pointed to by pp. The length of the resulting ASN1 representation is returned. If pp is the NULL pointer, only the length is calculated and returned.
             "i2d_SSL_SESSION", "int", ["pointer", "pointer"]
         );
 
@@ -57,11 +59,13 @@ resolver.enumerateMatches("exports:*!SSL_connect", {
         };
 
         function handleSSL(ssl) {
+            // takes an SSL object as input, retrieves its SSL session using the SSLgetsession function, and encodes the session using the i2dSSLSESSION function, then sends the encoded session data to the Python script
             const session = SSL_get_session(ssl);
             send("session", encodeSSLSession(session));
         }
 
         Interceptor.attach(match.address, {
+            // attaches an interceptor to the SSLconnect function
             onEnter: function(args) {
                 this.ssl = args[0];
             },
@@ -72,6 +76,7 @@ resolver.enumerateMatches("exports:*!SSL_connect", {
         });
 
         function attachSSLExport(name) {
+            // attach interceptors to the SSLread and SSLwrite functions
             Interceptor.attach(resolveExport(name), {
                 onEnter: function (args) {
                     const ssl = args[0];

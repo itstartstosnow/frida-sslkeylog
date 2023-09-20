@@ -2,8 +2,7 @@
 import os
 
 from frida_tools.application import ConsoleApplication
-
-from pyasn1.codec.der import decoder
+from asn1crypto.core import Sequence, Integer, OctetString
 
 
 AGENT_FILENAME = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent.js")
@@ -15,7 +14,8 @@ class Application(ConsoleApplication):
     MASTER_KEY_LENGTH = 48
 
     def _add_options(self, parser):
-        parser.add_option("-o", "--output", help="SSL keylog file to write")
+        # https://docs.python.org/zh-cn/3/library/argparse.html argparse uses add_argument
+        parser.add_argument("-o", "--output", help="SSL keylog file to write")
 
     def _initialize(self, parser, options, args):
         self._file = open(options.output, "a")
@@ -54,10 +54,10 @@ class Application(ConsoleApplication):
         print(message)
 
     def _on_session(self, data):
-        asn1Sequence, _ = decoder.decode(data)
-
-        session_id = asn1Sequence[3].asOctets()
-        master_key = asn1Sequence[4].asOctets()
+        # decodes the SSL session data, extracts the session ID and master key
+        asn1_data = PartialSSLSession.load(data)
+        session_id = asn1_data['sessionId'].native
+        master_key = asn1_data['masterKey'].native
 
         self._keylog(session_id, master_key)
 
@@ -104,6 +104,15 @@ class Application(ConsoleApplication):
         with open(AGENT_FILENAME) as f:
             return f.read()
 
+class PartialSSLSession(Sequence):
+    _fields = [
+        ('version', Integer),
+        ('privateKeyAlgorithm', Integer),
+        ('privateKey', OctetString),    # 2bytes 
+        ('sessionId', OctetString),     # 32 bytes  
+        ('masterKey', OctetString)      # 48 bytes
+        # this is enough for extracting sessionId and masterKey
+    ]
 
 def main():
     app = Application()
