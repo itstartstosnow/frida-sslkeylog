@@ -59,12 +59,11 @@ class Application(ConsoleApplication):
             asn1_data = PartialSSLSession.load(data)
             session_id = asn1_data['sessionId'].native
             master_key = asn1_data['masterKey'].native
+            self._keylog(session_id, master_key)
         except Exception as e: 
             self._log("error", "Exception on decoding: {}".format(e)) 
             # with open("sessionDataDebug.asn1", "wb") as file: 
             #     file.write(data)
-
-        self._keylog(session_id, master_key)
 
     def _cache_session(self, session_id):
         if session_id in self._session_cache:
