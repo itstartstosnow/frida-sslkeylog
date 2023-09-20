@@ -55,9 +55,14 @@ class Application(ConsoleApplication):
 
     def _on_session(self, data):
         # decodes the SSL session data, extracts the session ID and master key
-        asn1_data = PartialSSLSession.load(data)
-        session_id = asn1_data['sessionId'].native
-        master_key = asn1_data['masterKey'].native
+        try: 
+            asn1_data = PartialSSLSession.load(data)
+            session_id = asn1_data['sessionId'].native
+            master_key = asn1_data['masterKey'].native
+        except Exception as e: 
+            self._log("error", "Exception on decoding: {}".format(e)) 
+            # with open("sessionDataDebug.asn1", "wb") as file: 
+            #     file.write(data)
 
         self._keylog(session_id, master_key)
 
